@@ -67,6 +67,20 @@ class RestController
 
         register_rest_route(
             self::NAMESPACE,
+            '/heartbeat',
+            [
+                'methods'             => 'POST',
+                'callback'            => [self::class, 'handleHeartbeat'],
+                'permission_callback' => [self::class, 'permission'],
+                'args'                => [
+                    'ready' => ['type' => 'boolean', 'default' => true],
+                    'model' => ['type' => 'string', 'default' => ''],
+                ],
+            ]
+        );
+
+        register_rest_route(
+            self::NAMESPACE,
             '/result',
             [
                 'methods'             => 'POST',
@@ -145,6 +159,27 @@ class RestController
         } while (microtime(true) < $deadline);
 
         return new WP_REST_Response(['job' => null], 200);
+    }
+
+    /**
+     * Records a worker heartbeat without claiming a job.
+     *
+     * The worker calls this on a timer so its liveness is tracked even while it is
+     * busy running an inference (and therefore not polling).
+     *
+     * @since 0.3.0
+     *
+     * @param WP_REST_Request $request The request.
+     * @return WP_REST_Response Acknowledgement.
+     */
+    public static function handleHeartbeat(WP_REST_Request $request): WP_REST_Response
+    {
+        WebLlmBridge::heartbeat(
+            (bool) $request->get_param('ready'),
+            sanitize_text_field((string) $request->get_param('model'))
+        );
+
+        return new WP_REST_Response(['ok' => true], 200);
     }
 
     /**

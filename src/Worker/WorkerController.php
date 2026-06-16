@@ -70,10 +70,12 @@ class WorkerController
         wp_enqueue_script(
             self::HANDLE,
             plugins_url('assets/js/webllm-worker.js', $mainFile),
-            [],
+            ['wp-i18n'],
             '0.3.0',
             true
         );
+
+        wp_set_script_translations(self::HANDLE, 'ai-provider-for-webllm');
 
         wp_localize_script(
             self::HANDLE,

@@ -190,6 +190,12 @@ class WebLlmBridge
             );
         }
 
+        // Release the PHP session lock (if any plugin opened one) before blocking, so the
+        // worker's own same-user requests are not locked out for the duration of the wait.
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            session_write_close();
+        }
+
         global $wpdb;
 
         $now = time();
@@ -237,6 +243,17 @@ class WebLlmBridge
                 self::deleteJob($id);
 
                 throw new RuntimeException('WebLLM worker error: ' . $error);
+            }
+
+            // Still waiting to be picked up and the worker has gone away: fail fast
+            // rather than blocking for the full timeout. (Safe because the worker
+            // heartbeats on a timer even while busy, so a stale heartbeat means gone.)
+            if ('pending' === $row['status'] && !self::workerAvailable($model)) {
+                self::deleteJob($id);
+
+                throw new RuntimeException(
+                    sprintf('The WebLLM worker for model %s disconnected before starting the job.', $model)
+                );
             }
         }
 

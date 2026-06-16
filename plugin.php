@@ -49,9 +49,9 @@ require_once __DIR__ . '/src/autoload.php';
  * Unlike the cloud providers, WebLLM is a client-side (browser) provider: the
  * model runs in the visitor's browser via WebGPU. The PHP classes registered
  * here describe the provider and its models so the AI Client and the
- * Settings > Connectors UI recognise it; the actual inference is driven from
- * the browser runtime (see assets/js), never from PHP. Server-initiated
- * generation therefore fails loudly — there is no browser in the loop.
+ * Settings > Connectors UI recognise it. Server-initiated (PHP) generation is
+ * bridged to a connected browser worker (see Bridge\WebLlmBridge); if no worker
+ * is connected it fails loudly, since there is no headless path.
  *
  * @since 0.1.0
  *
