@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="WebLLM">
+  <rect width="48" height="48" rx="10" fill="#1f2933"/>
+  <path d="M14 18c0-2.2 1.8-4 4-4h12c2.2 0 4 1.8 4 4v8c0 2.2-1.8 4-4 4h-6l-5 4v-4h-1c-2.2 0-4-1.8-4-4v-8z" fill="#4cc9f0"/>
+  <circle cx="20" cy="22" r="1.8" fill="#1f2933"/>
+  <circle cx="28" cy="22" r="1.8" fill="#1f2933"/>
+</svg>
