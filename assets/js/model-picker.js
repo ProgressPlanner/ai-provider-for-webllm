@@ -8,7 +8,7 @@
  * into a hidden input so the standard Settings API form saves it.
  *
  * Buildless on purpose: uses the registered `wp-element` / `wp-components` globals
- * (no JSX / webpack). web-llm is pulled with a dynamic import (unpinned = latest);
+ * (no JSX / webpack). web-llm is pulled with a pinned dynamic import;
  * the same package will power inference, so this also primes its cache.
  */
 ( function ( wp ) {
@@ -63,7 +63,7 @@
 		useEffect( () => {
 			let active = true;
 
-			import( 'https://esm.run/@mlc-ai/web-llm' )
+			import( 'https://esm.run/@mlc-ai/web-llm@0.2.84' )
 				.then( ( mod ) => {
 					if ( ! active ) {
 						return;

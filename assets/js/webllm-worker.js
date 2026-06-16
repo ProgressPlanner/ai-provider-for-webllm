@@ -4,12 +4,18 @@
  * Spins up the WebLLM engine in a dedicated Web Worker, then runs a loop against
  * the PHP bridge: long-poll `/poll` for a job, run it with
  * `engine.chat.completions.create()`, post the completion back to `/result`.
- * This is what makes PHP-initiated generation work.
+ * A separate timer posts `/heartbeat` so the worker's liveness is tracked even
+ * while it is busy running an inference (and therefore not polling). This is what
+ * makes PHP-initiated generation work.
  *
  * Config is provided by wp_localize_script as `window.aiProviderWebllmWorker`.
  */
 ( function () {
 	const cfg = window.aiProviderWebllmWorker || {};
+	const i18n = ( window.wp && window.wp.i18n ) || { __: ( s ) => s, sprintf: ( f ) => f };
+	const { __, sprintf } = i18n;
+	const DOMAIN = 'ai-provider-for-webllm';
+	const HEARTBEAT_MS = 10000;
 
 	if ( ! cfg.enabled || ! cfg.model ) {
 		return;
@@ -18,35 +24,52 @@
 	// WebGPU requires a secure context (HTTPS or localhost).
 	if ( ! window.isSecureContext ) {
 		setStatus(
-			'unavailable — needs a secure context (HTTPS or localhost). This site is served over ' +
-				'http://, so the browser disables WebGPU.'
+			__(
+				'unavailable — needs a secure context (HTTPS or localhost) so the browser enables WebGPU',
+				DOMAIN
+			)
 		);
 		return;
 	}
 
 	if ( ! ( 'gpu' in navigator ) ) {
-		setStatus( 'unavailable — WebGPU not available (update the browser, or enable it in flags)' );
+		setStatus( __( 'unavailable — WebGPU is not available in this browser', DOMAIN ) );
 		return;
 	}
 
 	const headers = { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.nonce };
 
-	main().catch( ( error ) => setStatus( 'error: ' + message( error ) ) );
+	main().catch( ( error ) =>
+		setStatus( sprintf( __( 'error: %s', DOMAIN ), message( error ) ) )
+	);
 
 	async function main() {
-		const webllm = await import( 'https://esm.run/@mlc-ai/web-llm' );
+		const webllm = await import( 'https://esm.run/@mlc-ai/web-llm@0.2.84' );
 
-		setStatus( 'loading model…' );
+		setStatus( __( 'loading model…', DOMAIN ) );
 		const worker = new Worker( cfg.workerUrl, { type: 'module' } );
 		const engine = await webllm.CreateWebWorkerMLCEngine( worker, cfg.model, {
 			initProgressCallback: ( report ) => {
 				const pct = Math.round( ( report.progress || 0 ) * 100 );
-				setStatus( 'loading model… ' + pct + '%' );
+				setStatus( sprintf( __( 'loading model… %d%%', DOMAIN ), pct ) );
 			},
 		} );
 
-		setStatus( 'ready' );
+		setStatus( __( 'ready', DOMAIN ) );
+		startHeartbeat();
 		await pollLoop( engine );
+	}
+
+	// Keep reporting liveness independently of the job loop, so a long inference
+	// (during which we are not polling) does not look like a disconnected worker.
+	function startHeartbeat() {
+		setInterval( () => {
+			fetch( cfg.restUrl + '/heartbeat', {
+				method: 'POST',
+				headers,
+				body: JSON.stringify( { ready: true, model: cfg.model } ),
+			} ).catch( () => {} );
+		}, HEARTBEAT_MS );
 	}
 
 	async function pollLoop( engine ) {
@@ -73,18 +96,18 @@
 				// The engine is already bound to a model; drop the redundant `model` field.
 				const { model, ...params } = job.payload || {};
 				const completion = await engine.chat.completions.create( params );
-				await report( job.id, { result: completion } );
+				await report( job.id, job.claim_token, { result: completion } );
 			} catch ( error ) {
-				await report( job.id, { error: message( error ) } );
+				await report( job.id, job.claim_token, { error: message( error ) } );
 			}
 		}
 	}
 
-	function report( id, extra ) {
+	function report( id, claimToken, extra ) {
 		return fetch( cfg.restUrl + '/result', {
 			method: 'POST',
 			headers,
-			body: JSON.stringify( Object.assign( { id }, extra ) ),
+			body: JSON.stringify( Object.assign( { id, claim_token: claimToken || '' }, extra ) ),
 		} );
 	}
 
@@ -99,7 +122,7 @@
 	function setStatus( text ) {
 		const el = document.getElementById( 'ai-provider-webllm-worker-status' );
 		if ( el ) {
-			el.textContent = 'WebLLM worker: ' + text;
+			el.textContent = sprintf( __( 'WebLLM worker: %s', DOMAIN ), text );
 		}
 		// eslint-disable-next-line no-console
 		if ( window.console ) {

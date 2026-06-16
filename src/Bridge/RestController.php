@@ -67,15 +67,30 @@ class RestController
 
         register_rest_route(
             self::NAMESPACE,
+            '/heartbeat',
+            [
+                'methods'             => 'POST',
+                'callback'            => [self::class, 'handleHeartbeat'],
+                'permission_callback' => [self::class, 'permission'],
+                'args'                => [
+                    'ready' => ['type' => 'boolean', 'default' => true],
+                    'model' => ['type' => 'string', 'default' => ''],
+                ],
+            ]
+        );
+
+        register_rest_route(
+            self::NAMESPACE,
             '/result',
             [
                 'methods'             => 'POST',
                 'callback'            => [self::class, 'handleResult'],
                 'permission_callback' => [self::class, 'permission'],
                 'args'                => [
-                    'id'     => ['type' => 'integer', 'required' => true],
-                    'result' => ['type' => 'object'],
-                    'error'  => ['type' => 'string'],
+                    'id'          => ['type' => 'integer', 'required' => true],
+                    'claim_token' => ['type' => 'string', 'required' => true],
+                    'result'      => ['type' => 'object'],
+                    'error'       => ['type' => 'string'],
                 ],
             ]
         );
@@ -90,16 +105,28 @@ class RestController
      */
     public static function permission(): bool
     {
+        return current_user_can(self::capability());
+    }
+
+    /**
+     * Returns the capability required to operate the browser worker.
+     *
+     * @since 0.3.0
+     *
+     * @return string The required capability.
+     */
+    public static function capability(): string
+    {
         /**
          * Filters the capability required to operate the WebLLM worker.
          *
          * @since 0.3.0
          *
-         * @param string $capability The capability. Default 'edit_posts'.
+         * @param string $capability The capability. Default 'manage_options'.
          */
-        $capability = (string) apply_filters('ai_provider_webllm_worker_capability', 'edit_posts');
+        $capability = (string) apply_filters('ai_provider_webllm_worker_capability', 'manage_options');
 
-        return current_user_can($capability);
+        return '' !== $capability ? $capability : 'manage_options';
     }
 
     /**
@@ -113,7 +140,7 @@ class RestController
     public static function handlePoll(WP_REST_Request $request): WP_REST_Response
     {
         $ready = (bool) $request->get_param('ready');
-        $model = (string) $request->get_param('model');
+        $model = sanitize_text_field((string) $request->get_param('model'));
 
         WebLlmBridge::heartbeat($ready, $model);
 
@@ -124,7 +151,7 @@ class RestController
 
         $deadline = microtime(true) + self::POLL_HOLD;
         do {
-            $job = WebLlmBridge::claimNext();
+            $job = WebLlmBridge::claimNext($model);
             if (null !== $job) {
                 return new WP_REST_Response(['job' => $job], 200);
             }
@@ -132,6 +159,27 @@ class RestController
         } while (microtime(true) < $deadline);
 
         return new WP_REST_Response(['job' => null], 200);
+    }
+
+    /**
+     * Records a worker heartbeat without claiming a job.
+     *
+     * The worker calls this on a timer so its liveness is tracked even while it is
+     * busy running an inference (and therefore not polling).
+     *
+     * @since 0.3.0
+     *
+     * @param WP_REST_Request $request The request.
+     * @return WP_REST_Response Acknowledgement.
+     */
+    public static function handleHeartbeat(WP_REST_Request $request): WP_REST_Response
+    {
+        WebLlmBridge::heartbeat(
+            (bool) $request->get_param('ready'),
+            sanitize_text_field((string) $request->get_param('model'))
+        );
+
+        return new WP_REST_Response(['ok' => true], 200);
     }
 
     /**
@@ -144,15 +192,21 @@ class RestController
      */
     public static function handleResult(WP_REST_Request $request): WP_REST_Response
     {
-        $id     = (int) $request->get_param('id');
-        $result = $request->get_param('result');
-        $error  = $request->get_param('error');
+        $id         = (int) $request->get_param('id');
+        $claimToken = (string) $request->get_param('claim_token');
+        $result     = $request->get_param('result');
+        $error      = $request->get_param('error');
 
-        WebLlmBridge::completeJob(
+        $completed = WebLlmBridge::completeJob(
             $id,
+            $claimToken,
             is_array($result) ? $result : null,
             is_string($error) && '' !== $error ? $error : null
         );
+
+        if (!$completed) {
+            return new WP_REST_Response(['ok' => false, 'error' => 'Invalid or stale job claim.'], 409);
+        }
 
         return new WP_REST_Response(['ok' => true], 200);
     }

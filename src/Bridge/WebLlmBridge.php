@@ -25,7 +25,7 @@ class WebLlmBridge
      *
      * @var string
      */
-    private const DB_VERSION = '1';
+    private const DB_VERSION = '2';
 
     /**
      * Option storing the installed schema version.
@@ -54,6 +54,13 @@ class WebLlmBridge
      * @var int
      */
     private const POLL_INTERVAL_US = 250000;
+
+    /**
+     * Seconds before an unfinished claimed job can be retried by another worker.
+     *
+     * @var int
+     */
+    private const CLAIM_TTL = 30;
 
     /**
      * Returns the jobs table name.
@@ -94,13 +101,15 @@ class WebLlmBridge
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                 status VARCHAR(20) NOT NULL DEFAULT 'pending',
                 claim_token VARCHAR(32) DEFAULT NULL,
+                model VARCHAR(191) NOT NULL DEFAULT '',
                 payload LONGTEXT NOT NULL,
                 result LONGTEXT DEFAULT NULL,
                 error TEXT DEFAULT NULL,
                 created_at INT NOT NULL,
                 updated_at INT NOT NULL,
                 PRIMARY KEY  (id),
-                KEY status (status)
+                KEY status (status),
+                KEY status_model (status, model)
             ) {$collate};"
         );
 
@@ -132,13 +141,23 @@ class WebLlmBridge
      *
      * @return bool True if a ready worker is available.
      */
-    public static function workerAvailable(): bool
+    public static function workerAvailable(string $model = ''): bool
     {
         $worker = get_option(self::WORKER_OPTION);
 
-        return is_array($worker)
+        $available = is_array($worker)
             && !empty($worker['ready'])
             && (time() - (int) ($worker['t'] ?? 0)) <= self::WORKER_TTL;
+
+        if (!$available) {
+            return false;
+        }
+
+        if ('' === $model) {
+            return true;
+        }
+
+        return isset($worker['model']) && (string) $worker['model'] === $model;
     }
 
     /**
@@ -153,11 +172,28 @@ class WebLlmBridge
      */
     public static function run(array $payload, int $timeout = 120): array
     {
-        if (!self::workerAvailable()) {
+        $model = isset($payload['model']) && is_string($payload['model'])
+            ? sanitize_text_field($payload['model'])
+            : '';
+
+        if ('' === $model) {
+            throw new RuntimeException('A WebLLM model is required before enqueueing a generation job.');
+        }
+
+        if (!self::workerAvailable($model)) {
             throw new RuntimeException(
-                'No WebLLM worker is connected. Open the WebLLM worker page in a browser '
-                . 'and wait for the model to finish loading, then retry.'
+                sprintf(
+                    'No WebLLM worker is connected for model %s. Open the WebLLM worker page in a browser '
+                    . 'and wait for that model to finish loading, then retry.',
+                    $model
+                )
             );
+        }
+
+        // Release the PHP session lock (if any plugin opened one) before blocking, so the
+        // worker's own same-user requests are not locked out for the duration of the wait.
+        if (PHP_SESSION_ACTIVE === session_status()) {
+            session_write_close();
         }
 
         global $wpdb;
@@ -167,6 +203,7 @@ class WebLlmBridge
             self::table(),
             [
                 'status'     => 'pending',
+                'model'      => $model,
                 'payload'    => (string) wp_json_encode($payload),
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -207,6 +244,17 @@ class WebLlmBridge
 
                 throw new RuntimeException('WebLLM worker error: ' . $error);
             }
+
+            // Still waiting to be picked up and the worker has gone away: fail fast
+            // rather than blocking for the full timeout. (Safe because the worker
+            // heartbeats on a timer even while busy, so a stale heartbeat means gone.)
+            if ('pending' === $row['status'] && !self::workerAvailable($model)) {
+                self::deleteJob($id);
+
+                throw new RuntimeException(
+                    sprintf('The WebLLM worker for model %s disconnected before starting the job.', $model)
+                );
+            }
         }
 
         self::deleteJob($id);
@@ -219,16 +267,39 @@ class WebLlmBridge
      *
      * @since 0.3.0
      *
-     * @return array{id: int, payload: array<string, mixed>}|null The claimed job, or null if none.
+     * @param string $model The model currently loaded by the worker.
+     * @return array{id: int, claim_token: string, payload: array<string, mixed>}|null The claimed job, or null if none.
      */
-    public static function claimNext(): ?array
+    public static function claimNext(string $model): ?array
     {
         global $wpdb;
 
+        $model = sanitize_text_field($model);
+        if ('' === $model) {
+            return null;
+        }
+
         $table = self::table();
+        $now   = time();
+
+        // Allow another compatible worker to retry abandoned claims.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$table} SET status = 'pending', claim_token = NULL, updated_at = %d WHERE status = 'claimed' AND updated_at < %d",
+                $now,
+                $now - self::CLAIM_TTL
+            )
+        );
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $row = $wpdb->get_row("SELECT id, payload FROM {$table} WHERE status = 'pending' ORDER BY id ASC LIMIT 1", ARRAY_A);
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id, payload FROM {$table} WHERE status = 'pending' AND model = %s ORDER BY id ASC LIMIT 1",
+                $model
+            ),
+            ARRAY_A
+        );
         if (null === $row) {
             return null;
         }
@@ -253,7 +324,7 @@ class WebLlmBridge
 
         $payload = json_decode((string) $row['payload'], true);
 
-        return ['id' => $id, 'payload' => is_array($payload) ? $payload : []];
+        return ['id' => $id, 'claim_token' => $token, 'payload' => is_array($payload) ? $payload : []];
     }
 
     /**
@@ -261,30 +332,37 @@ class WebLlmBridge
      *
      * @since 0.3.0
      *
-     * @param int                       $id     The job ID.
-     * @param array<string, mixed>|null $result The OpenAI-shaped completion, or null on error.
-     * @param string|null               $error  An error message, or null on success.
-     * @return void
+     * @param int                       $id         The job ID.
+     * @param string                    $claimToken The token assigned when the job was claimed.
+     * @param array<string, mixed>|null $result     The OpenAI-shaped completion, or null on error.
+     * @param string|null               $error      An error message, or null on success.
+     * @return bool Whether the job was completed.
      */
-    public static function completeJob(int $id, ?array $result, ?string $error): void
+    public static function completeJob(int $id, string $claimToken, ?array $result, ?string $error): bool
     {
         global $wpdb;
 
-        if (null !== $error) {
-            $wpdb->update(
-                self::table(),
-                ['status' => 'error', 'error' => $error, 'updated_at' => time()],
-                ['id' => $id]
-            );
-
-            return;
+        if ('' === $claimToken) {
+            return false;
         }
 
-        $wpdb->update(
+        if (null !== $error) {
+            $updated = $wpdb->update(
+                self::table(),
+                ['status' => 'error', 'error' => $error, 'updated_at' => time()],
+                ['id' => $id, 'claim_token' => $claimToken, 'status' => 'claimed']
+            );
+
+            return 1 === $updated;
+        }
+
+        $updated = $wpdb->update(
             self::table(),
             ['status' => 'done', 'result' => (string) wp_json_encode($result), 'updated_at' => time()],
-            ['id' => $id]
+            ['id' => $id, 'claim_token' => $claimToken, 'status' => 'claimed']
         );
+
+        return 1 === $updated;
     }
 
     /**

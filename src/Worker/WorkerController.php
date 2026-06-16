@@ -61,7 +61,7 @@ class WorkerController
      */
     public static function enqueue(): void
     {
-        if (!self::isEnabled() || !current_user_can('edit_posts')) {
+        if (!self::isEnabled() || !current_user_can(RestController::capability())) {
             return;
         }
 
@@ -70,10 +70,12 @@ class WorkerController
         wp_enqueue_script(
             self::HANDLE,
             plugins_url('assets/js/webllm-worker.js', $mainFile),
-            [],
+            ['wp-i18n'],
             '0.3.0',
             true
         );
+
+        wp_set_script_translations(self::HANDLE, 'ai-provider-for-webllm');
 
         wp_localize_script(
             self::HANDLE,

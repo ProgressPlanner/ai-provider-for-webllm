@@ -190,9 +190,20 @@ class WebLlmTextGenerationModel implements ModelInterface, TextGenerationModelIn
 
         if ('application/json' === $config->getOutputMimeType()) {
             $schema = $config->getOutputSchema();
-            $payload['response_format'] = is_array($schema)
-                ? ['type' => 'json_object', 'schema' => $schema]
-                : ['type' => 'json_object'];
+            $payload['response_format'] = ['type' => 'json_object'];
+
+            if (is_array($schema)) {
+                $encodedSchema = wp_json_encode($schema);
+                if (is_string($encodedSchema)) {
+                    $payload['response_format']['schema'] = $encodedSchema;
+                }
+            }
+        }
+
+        foreach ($config->getCustomOptions() as $key => $value) {
+            if (is_string($key) && '' !== $key) {
+                $payload[$key] = $value;
+            }
         }
 
         return $payload;

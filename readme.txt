@@ -1,65 +1,47 @@
 === AI Provider for WebLLM ===
-Contributors: jdevalk, progressplanner
+Contributors: jdevalk
 Tags: ai, webllm, webgpu, ai-client, llm
-Requires at least: 6.8
-Tested up to: 6.8
+Requires at least: 7.0
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 0.3.0
 License: GPL-2.0-or-later
 License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
 
-Run a language model in the browser via WebGPU and use it as a client-side AI Provider for the WordPress AI Client. No API key, no cloud.
+Registers an in-browser WebLLM model as an AI Provider for the WordPress AI Client. Inference runs in the browser via WebGPU — no API keys, no cost, nothing leaves the device.
 
 == Description ==
 
-AI Provider for WebLLM registers [WebLLM](https://github.com/mlc-ai/web-llm) as a **client-side** provider for the WordPress AI Client. The model runs entirely in the visitor's browser using WebGPU, so text generation is private by default and costs nothing per request — there is no server or third-party API in the loop.
+WebLLM runs a large language model entirely in the visitor's browser using WebGPU. This plugin exposes it as a provider for the WordPress 7.0 AI Client, so any feature built on the AI Client can use a local, private, no-cost model.
 
-**Why use it**
+Pick a model under **Settings → WebLLM**. The model list is read live from WebLLM's own catalogue; the chosen model is downloaded once and cached in the browser.
 
-* **No API key, no bill.** Inference happens on the user's GPU. Nothing is sent to a cloud provider.
-* **Private by design.** Prompts and completions never leave the browser.
-* **A real AI Client provider.** It appears under Settings &rarr; AI (Connectors) like any other provider.
-* **Optional server-side bridge.** An open wp-admin tab can act as a worker, letting PHP-initiated generation run in that browser.
+= How it is used =
 
-The plugin only describes the provider and its models so the AI Client recognises it; the actual inference is driven from the browser runtime, never from PHP.
+A PHP call (e.g. `wp_ai_client_prompt()`) is bridged to a connected browser "worker" tab that runs the model and returns the result. Enable **Settings → WebLLM → In-browser worker** for this.
 
-== Requirements ==
+== Known limitations ==
 
-* The WordPress AI Client must be available (provided by WordPress' AI feature or a plugin that bundles it).
-* A browser with WebGPU support for inference.
+These are inherent to running a model in the browser; read them before relying on server-initiated generation.
 
-== Installation ==
+* **A browser worker tab must be open and loaded.** Server-initiated (PHP) generation only works while an admin tab with the in-browser worker enabled is open and the selected model has finished loading. Close every admin tab and PHP-initiated generation fails with "no worker connected."
+* **No headless path.** WP-CLI and cron have no browser, so they cannot use this provider. Use a cloud/server provider for headless work.
+* **PHP-initiated generation blocks a PHP process while it waits** for the browser to answer (up to the `ai_provider_webllm_timeout` seconds, default 120). On hosts with a small PHP worker pool, many concurrent server-initiated calls can exhaust the pool. Prefer browser-initiated use where possible, and keep the timeout sane.
+* **One model at a time.** The worker serves the single model selected in settings. Changing the model while a worker tab is open requires reloading that tab to apply.
+* **WebGPU + a secure context are required.** The browser must support WebGPU (recent Chrome is the most reliable) and the site must be served over HTTPS or `localhost`; plain-HTTP custom domains are not a secure context and the browser disables WebGPU there.
 
-1. Upload the plugin to `wp-content/plugins/ai-provider-for-webllm`, or install it from your WordPress dashboard.
-2. Activate **AI Provider for WebLLM** through the Plugins screen.
-3. Make sure a plugin or feature providing the WordPress AI Client is active.
-4. Go to **Settings &rarr; WebLLM** and pick a model.
+== Filters ==
 
-== Frequently Asked Questions ==
-
-= Do I need an API key? =
-
-No. WebLLM runs in the browser, so there is no key to enter and no per-token cost.
-
-= Where does the model run? =
-
-Entirely in the visitor's browser via WebGPU. The model is downloaded once and cached.
-
-= Can the server generate text on its own? =
-
-Only with the optional in-browser worker enabled and a wp-admin tab open with the model loaded. There is no headless (cron/WP-CLI) path, because those have no browser.
-
-= Which models are available? =
-
-The model list is read live from WebLLM's own catalogue in the browser and ordered by size, so it is always current.
+* `ai_provider_webllm_timeout` — seconds PHP waits for a worker result. Default 120.
+* `ai_provider_webllm_worker_capability` — capability required to operate the worker. Default `manage_options`.
 
 == Changelog ==
 
 = 0.3.0 =
-* Added the optional browser-worker bridge so PHP-initiated generation can run in a connected wp-admin tab.
+* Server-initiated generation via a browser-worker bridge (jobs table + REST endpoints), model-scoped jobs, claim-token integrity, and a liveness heartbeat.
 
 = 0.2.0 =
-* Added the Settings &rarr; WebLLM admin page for live model selection.
+* Settings → WebLLM model picker (live from WebLLM's catalogue).
 
 = 0.1.0 =
-* Initial release: registers WebLLM as a client-side AI Provider.
+* Initial provider registration with the WordPress AI Client.
