@@ -3,7 +3,7 @@
 > Run a large language model **inside the browser** — no API key, no cloud, no per-token cost — and use it as a first-class AI Provider for the WordPress AI Client.
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.3.0-green.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.1.0-green.svg)](CHANGELOG.md)
 [![Requires PHP](https://img.shields.io/badge/PHP-7.4%2B-8892bf.svg)](plugin.php)
 [![Requires WordPress](https://img.shields.io/badge/WordPress-7.0%2B-21759b.svg)](plugin.php)
 
