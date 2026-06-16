@@ -2,12 +2,13 @@
 
 /**
  * Plugin Name: AI Provider for WebLLM
- * Plugin URI: https://github.com/jdevalk/ai-provider-for-webllm
+ * Plugin URI: https://github.com/ProgressPlanner/ai-provider-for-webllm
  * Description: Registers an in-browser WebLLM model as a client-side AI Provider for the WordPress AI Client.
- * Requires at least: 7.0
+ * Requires at least: 6.8
  * Requires PHP: 7.4
- * Version: 0.1.0
+ * Version: 0.3.0
  * Author: Joost de Valk
+ * Author URI: https://progressplanner.com/
  * License: GPL-2.0-or-later
  * License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
  * Text Domain: ai-provider-for-webllm

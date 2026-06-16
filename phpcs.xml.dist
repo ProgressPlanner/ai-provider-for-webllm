@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<ruleset name="AI Provider for WebLLM">
+    <description>Coding standards for the AI Provider for WebLLM plugin.</description>
+
+    <!-- Scan PHP in the plugin root and src directory. -->
+    <file>plugin.php</file>
+    <file>src</file>
+
+    <!-- Exclude generated and third-party code. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <!-- WordPress Coding Standards. -->
+    <rule ref="WordPress"/>
+
+    <!-- PHP cross-version compatibility. -->
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="7.4-"/>
+
+    <!-- WordPress minimum supported version for deprecation/availability sniffs. -->
+    <config name="minimum_wp_version" value="6.8"/>
+
+    <!-- Text domain used throughout the plugin. -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="ai-provider-for-webllm"/>
+            </property>
+        </properties>
+    </rule>
+</ruleset>
