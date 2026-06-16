@@ -1,0 +1,34 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - plugin.php
+        - uninstall.php
+        - src
+    excludePaths:
+        # These thin adapters extend / implement WordPress\AiClient\* base classes
+        # and interfaces. The AI Client ships with WordPress 7.0 and is not a
+        # Composer dependency of this plugin, so PHPStan cannot reflect a class
+        # whose parent or interface is missing (it errors out rather than warns).
+        # The remaining code — the worker bridge, REST controller, settings, and
+        # model option — is fully analysed.
+        - src/Provider/WebLlmProvider.php
+        - src/Provider/WebLlmProviderAvailability.php
+        - src/Models/WebLlmTextGenerationModel.php
+        - src/Metadata/WebLlmModelMetadataDirectory.php
+    ignoreErrors:
+        # plugin.php references WordPress\AiClient\AiClient behind a class_exists()
+        # guard; that class is unknown to PHPStan for the same reason as above.
+        - '#WordPress\\AiClient#'
+        # plugin.php also references WebLlmProvider, which is excluded above
+        # because it extends an AI Client base class.
+        - message: '#Class WordPress\\WebLlmAiProvider\\Provider\\WebLlmProvider not found#'
+          path: plugin.php
+        # False positive: PHPStan assumes workerAvailable() is deterministic, but it
+        # reads a mutable option and the clock, so a worker can disconnect mid-loop.
+        # The status check guarding fail-fast is intentional and reachable.
+        - message: '#always false#'
+          path: src/Bridge/WebLlmBridge.php
+    reportUnmatchedIgnoredErrors: false

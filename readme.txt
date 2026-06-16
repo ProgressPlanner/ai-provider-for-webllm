@@ -1,8 +1,10 @@
 === AI Provider for WebLLM ===
 Contributors: jdevalk
+Tags: ai, webllm, webgpu, ai-client, llm
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 7.4
+Stable tag: 0.1.0
 License: GPL-2.0-or-later
 License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
 
@@ -35,11 +37,8 @@ These are inherent to running a model in the browser; read them before relying o
 
 == Changelog ==
 
-= 0.3.0 =
-* Server-initiated generation via a browser-worker bridge (jobs table + REST endpoints), model-scoped jobs, claim-token integrity, and a liveness heartbeat.
-
-= 0.2.0 =
-* Settings → WebLLM model picker (live from WebLLM's catalogue).
-
 = 0.1.0 =
-* Initial provider registration with the WordPress AI Client.
+* Initial release.
+* Registers WebLLM as a client-side AI Provider for the WordPress AI Client.
+* Settings → WebLLM model picker, loaded live from WebLLM's catalogue.
+* Server-initiated generation via a browser-worker bridge (jobs table + REST endpoints), with model-scoped jobs, claim-token integrity, and a liveness heartbeat.

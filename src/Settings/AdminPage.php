@@ -198,7 +198,7 @@ class AdminPage
             self::SCRIPT_HANDLE,
             plugins_url('assets/js/model-picker.js', dirname(__DIR__, 2) . '/plugin.php'),
             ['wp-element', 'wp-components', 'wp-i18n'],
-            '0.3.0',
+            '0.1.0',
             true
         );
 
@@ -210,7 +210,7 @@ class AdminPage
             self::SCRIPT_HANDLE,
             plugins_url('assets/css/model-picker.css', dirname(__DIR__, 2) . '/plugin.php'),
             ['wp-components'],
-            '0.3.0'
+            '0.1.0'
         );
     }
 

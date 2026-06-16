@@ -71,7 +71,7 @@ class WorkerController
             self::HANDLE,
             plugins_url('assets/js/webllm-worker.js', $mainFile),
             ['wp-i18n'],
-            '0.3.0',
+            '0.1.0',
             true
         );
 

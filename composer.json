@@ -1,0 +1,34 @@
+{
+    "name": "progressplanner/ai-provider-for-webllm",
+    "description": "Registers an in-browser WebLLM model as a client-side AI Provider for the WordPress AI Client.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "keywords": ["wordpress", "ai", "webllm", "webgpu", "ai-client", "llm"],
+    "homepage": "https://github.com/ProgressPlanner/ai-provider-for-webllm",
+    "authors": [
+        {
+            "name": "Joost de Valk",
+            "homepage": "https://progressplanner.com/"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "wp-coding-standards/wpcs": "^3.1",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "phpstan/phpstan": "^1.11",
+        "szepeviktor/phpstan-wordpress": "^1.3"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "phpstan": "phpstan analyse"
+    }
+}

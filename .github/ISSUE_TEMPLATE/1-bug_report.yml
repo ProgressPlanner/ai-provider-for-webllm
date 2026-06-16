@@ -1,0 +1,73 @@
+name: Bug Report
+description: Report a bug to help us improve
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting a bug! Please fill out the sections below so we can reproduce it.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+  - type: input
+    id: wp-version
+    attributes:
+      label: WordPress version
+      placeholder: "6.8"
+    validations:
+      required: true
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP version
+      placeholder: "8.2"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (and version)
+      description: Inference runs in the browser, so this matters. Include whether WebGPU is supported.
+      placeholder: "Chrome 126"
+    validations:
+      required: true
+  - type: dropdown
+    id: ai-client
+    attributes:
+      label: Is the WordPress AI Client available?
+      description: This plugin stays dormant without it.
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console / PHP logs
+      description: Paste any relevant browser console errors or PHP error log entries.
+      render: shell
+    validations:
+      required: false
