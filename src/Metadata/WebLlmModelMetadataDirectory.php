@@ -92,8 +92,8 @@ class WebLlmModelMetadataDirectory implements ModelMetadataDirectoryInterface
      * Returns the configuration options every WebLLM model supports.
      *
      * WebLLM exposes an OpenAI-compatible chat completions API in the browser,
-     * so it supports the common generation options plus JSON-schema structured
-     * output and function calling.
+     * so the adapter supports the common generation options plus JSON-schema
+     * structured output and custom OpenAI-compatible request options.
      *
      * @since 0.1.0
      *
@@ -109,7 +109,6 @@ class WebLlmModelMetadataDirectory implements ModelMetadataDirectoryInterface
             new SupportedOption(OptionEnum::stopSequences()),
             new SupportedOption(OptionEnum::outputMimeType(), ['text/plain', 'application/json']),
             new SupportedOption(OptionEnum::outputSchema()),
-            new SupportedOption(OptionEnum::functionDeclarations()),
             new SupportedOption(OptionEnum::customOptions()),
             new SupportedOption(OptionEnum::inputModalities(), [[ModalityEnum::text()]]),
             new SupportedOption(OptionEnum::outputModalities(), [[ModalityEnum::text()]]),

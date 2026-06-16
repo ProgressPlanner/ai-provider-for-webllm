@@ -9,7 +9,7 @@
  * Tradeoff vs a service worker: the worker (and the loaded model) is tied to its
  * page, so it reloads from cache on navigation rather than staying warm.
  */
-import { WebWorkerMLCEngineHandler } from 'https://esm.run/@mlc-ai/web-llm';
+import { WebWorkerMLCEngineHandler } from 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 
 const handler = new WebWorkerMLCEngineHandler();
 

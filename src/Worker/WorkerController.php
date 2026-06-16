@@ -61,7 +61,7 @@ class WorkerController
      */
     public static function enqueue(): void
     {
-        if (!self::isEnabled() || !current_user_can('edit_posts')) {
+        if (!self::isEnabled() || !current_user_can(RestController::capability())) {
             return;
         }
 

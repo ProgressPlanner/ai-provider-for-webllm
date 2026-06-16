@@ -34,7 +34,7 @@
 	main().catch( ( error ) => setStatus( 'error: ' + message( error ) ) );
 
 	async function main() {
-		const webllm = await import( 'https://esm.run/@mlc-ai/web-llm' );
+		const webllm = await import( 'https://esm.run/@mlc-ai/web-llm@0.2.84' );
 
 		setStatus( 'loading model…' );
 		const worker = new Worker( cfg.workerUrl, { type: 'module' } );
@@ -73,18 +73,18 @@
 				// The engine is already bound to a model; drop the redundant `model` field.
 				const { model, ...params } = job.payload || {};
 				const completion = await engine.chat.completions.create( params );
-				await report( job.id, { result: completion } );
+				await report( job.id, job.claim_token, { result: completion } );
 			} catch ( error ) {
-				await report( job.id, { error: message( error ) } );
+				await report( job.id, job.claim_token, { error: message( error ) } );
 			}
 		}
 	}
 
-	function report( id, extra ) {
+	function report( id, claimToken, extra ) {
 		return fetch( cfg.restUrl + '/result', {
 			method: 'POST',
 			headers,
-			body: JSON.stringify( Object.assign( { id }, extra ) ),
+			body: JSON.stringify( Object.assign( { id, claim_token: claimToken || '' }, extra ) ),
 		} );
 	}
 
