@@ -16,16 +16,21 @@ There is no build step for the plugin itself — it uses a hand-rolled PSR-4 aut
 
 ## Coding standards
 
-This project follows the [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards). Before opening a pull request:
+The PHP follows modern, namespaced **PSR-12** (not WordPress-Core formatting), checked together with PHP cross-version compatibility. The JavaScript and CSS are linted with `@wordpress/scripts`. Before opening a pull request:
 
 ```bash
-composer lint        # check with PHPCS
-composer lint:fix    # auto-fix what can be fixed (PHPCBF)
+composer lint        # PHP CodeSniffer: PSR-12 + PHP compatibility
+composer lint:fix    # auto-fix PHP formatting (PHPCBF)
+composer phpstan     # static analysis
+npm run lint:js      # ESLint
+npm run lint:css     # Stylelint
 ```
+
+Run `composer install` and `npm install` once to set the tooling up.
 
 Please also keep these conventions in mind:
 
-- PHP files use `declare(strict_types=1);` and the `WordPress\WebLlmAiProvider\` namespace.
+- PHP files use `declare(strict_types=1);`, the `WordPress\WebLlmAiProvider\` namespace, and PSR-4 file names.
 - Escape on output, sanitize on input, and check capabilities and nonces on every request.
 - Add a `@since` tag to new public methods and document the version.
 - Keep all model knowledge in the browser — there is deliberately no maintained model list in PHP.
@@ -34,7 +39,7 @@ Please also keep these conventions in mind:
 
 - Verify the provider appears under **Settings → AI** (Connectors) and that **Settings → WebLLM** loads the live model list.
 - If you touch the worker bridge, enable **In-browser worker**, keep a wp-admin tab open, and confirm a queued job runs and returns.
-- Test in a WebGPU-capable browser (recent Chrome or Edge).
+- Test in a WebGPU-capable browser (recent Chrome) over HTTPS or `localhost`.
 
 ## Pull requests
 
