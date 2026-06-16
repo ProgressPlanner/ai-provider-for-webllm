@@ -1,0 +1,17 @@
+{
+  "root": true,
+  "extends": ["plugin:@wordpress/eslint-plugin/recommended-with-formatting"],
+  "env": {
+    "browser": true,
+    "worker": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "globals": {
+    "wp": "readonly",
+    "aiProviderWebllmWorker": "readonly"
+  }
+}

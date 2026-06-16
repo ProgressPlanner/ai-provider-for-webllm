@@ -1,0 +1,14 @@
+{
+  "name": "ai-provider-for-webllm",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Registers an in-browser WebLLM model as a client-side AI Provider for the WordPress AI Client.",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "lint:js": "wp-scripts lint-js assets/js",
+    "lint:css": "wp-scripts lint-style \"assets/css/**/*.css\""
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^27.9.0"
+  }
+}

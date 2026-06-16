@@ -1,0 +1,30 @@
+# Files and directories excluded from the WordPress.org build.
+# Everything listed here stays in the Git repo but is NOT shipped to users.
+
+# Version control & GitHub
+/.git
+/.github
+/.gitattributes
+/.gitignore
+/.distignore
+
+# Dev tooling & dependencies
+/composer.json
+/composer.lock
+/phpcs.xml.dist
+/phpstan.neon.dist
+/phpstan.neon
+/package.json
+/package-lock.json
+/.eslintrc.json
+/.stylelintrc.json
+/node_modules
+/vendor
+
+# GitHub-facing docs (readme.txt is the WordPress.org listing)
+/README.md
+/CONTRIBUTING.md
+/CODE_OF_CONDUCT.md
+/SECURITY.md
+/SUPPORT.md
+/CHANGELOG.md

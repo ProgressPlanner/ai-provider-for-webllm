@@ -4,6 +4,7 @@
 
     <!-- Scan PHP in the plugin root and src directory. -->
     <file>plugin.php</file>
+    <file>uninstall.php</file>
     <file>src</file>
 
     <!-- Exclude generated and third-party code. -->
@@ -22,7 +23,7 @@
     <config name="testVersion" value="7.4-"/>
 
     <!-- WordPress minimum supported version for deprecation/availability sniffs. -->
-    <config name="minimum_wp_version" value="6.8"/>
+    <config name="minimum_wp_version" value="7.0"/>
 
     <!-- Text domain used throughout the plugin. -->
     <rule ref="WordPress.WP.I18n">
