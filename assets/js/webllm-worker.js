@@ -10,11 +10,14 @@
  *
  * Config is provided by wp_localize_script as `window.aiProviderWebllmWorker`.
  */
+/* global Worker */
 ( function () {
 	const cfg = window.aiProviderWebllmWorker || {};
-	const i18n = ( window.wp && window.wp.i18n ) || { __: ( s ) => s, sprintf: ( f ) => f };
+	const i18n = ( window.wp && window.wp.i18n ) || {
+		__: ( s ) => s,
+		sprintf: ( f ) => f,
+	};
 	const { __, sprintf } = i18n;
-	const DOMAIN = 'ai-provider-for-webllm';
 	const HEARTBEAT_MS = 10000;
 
 	if ( ! cfg.enabled || ! cfg.model ) {
@@ -26,36 +29,66 @@
 		setStatus(
 			__(
 				'unavailable — needs a secure context (HTTPS or localhost) so the browser enables WebGPU',
-				DOMAIN
+				'ai-provider-for-webllm'
 			)
 		);
 		return;
 	}
 
 	if ( ! ( 'gpu' in navigator ) ) {
-		setStatus( __( 'unavailable — WebGPU is not available in this browser', DOMAIN ) );
+		setStatus(
+			__(
+				'unavailable — WebGPU is not available in this browser',
+				'ai-provider-for-webllm'
+			)
+		);
 		return;
 	}
 
-	const headers = { 'Content-Type': 'application/json', 'X-WP-Nonce': cfg.nonce };
+	const headers = {
+		'Content-Type': 'application/json',
+		'X-WP-Nonce': cfg.nonce,
+	};
 
 	main().catch( ( error ) =>
-		setStatus( sprintf( __( 'error: %s', DOMAIN ), message( error ) ) )
+		setStatus(
+			sprintf(
+				/* translators: %s: WebLLM worker error message. */
+				__( 'error: %s', 'ai-provider-for-webllm' ),
+				message( error )
+			)
+		)
 	);
 
 	async function main() {
+		// eslint-disable-next-line import/no-unresolved
 		const webllm = await import( 'https://esm.run/@mlc-ai/web-llm@0.2.84' );
 
-		setStatus( __( 'loading model…', DOMAIN ) );
+		setStatus( __( 'loading model…', 'ai-provider-for-webllm' ) );
 		const worker = new Worker( cfg.workerUrl, { type: 'module' } );
-		const engine = await webllm.CreateWebWorkerMLCEngine( worker, cfg.model, {
-			initProgressCallback: ( report ) => {
-				const pct = Math.round( ( report.progress || 0 ) * 100 );
-				setStatus( sprintf( __( 'loading model… %d%%', DOMAIN ), pct ) );
-			},
-		} );
+		const engine = await webllm.CreateWebWorkerMLCEngine(
+			worker,
+			cfg.model,
+			{
+				initProgressCallback: ( progressReport ) => {
+					const pct = Math.round(
+						( progressReport.progress || 0 ) * 100
+					);
+					setStatus(
+						sprintf(
+							/* translators: %d: WebLLM model loading progress percentage. */
+							__(
+								'loading model… %d%%',
+								'ai-provider-for-webllm'
+							),
+							pct
+						)
+					);
+				},
+			}
+		);
 
-		setStatus( __( 'ready', DOMAIN ) );
+		setStatus( __( 'ready', 'ai-provider-for-webllm' ) );
 		startHeartbeat();
 		await pollLoop( engine );
 	}
@@ -73,7 +106,6 @@
 	}
 
 	async function pollLoop( engine ) {
-		// eslint-disable-next-line no-constant-condition
 		while ( true ) {
 			let job;
 			try {
@@ -83,7 +115,7 @@
 					body: JSON.stringify( { ready: true, model: cfg.model } ),
 				} );
 				job = ( await res.json() ).job;
-			} catch ( error ) {
+			} catch {
 				await sleep( 2000 );
 				continue;
 			}
@@ -95,10 +127,13 @@
 			try {
 				// The engine is already bound to a model; drop the redundant `model` field.
 				const { model, ...params } = job.payload || {};
-				const completion = await engine.chat.completions.create( params );
+				const completion =
+					await engine.chat.completions.create( params );
 				await report( job.id, job.claim_token, { result: completion } );
 			} catch ( error ) {
-				await report( job.id, job.claim_token, { error: message( error ) } );
+				await report( job.id, job.claim_token, {
+					error: message( error ),
+				} );
 			}
 		}
 	}
@@ -107,7 +142,9 @@
 		return fetch( cfg.restUrl + '/result', {
 			method: 'POST',
 			headers,
-			body: JSON.stringify( Object.assign( { id, claim_token: claimToken || '' }, extra ) ),
+			body: JSON.stringify(
+				Object.assign( { id, claim_token: claimToken || '' }, extra )
+			),
 		} );
 	}
 
@@ -120,13 +157,15 @@
 	}
 
 	function setStatus( text ) {
-		const el = document.getElementById( 'ai-provider-webllm-worker-status' );
+		const el = document.getElementById(
+			'ai-provider-webllm-worker-status'
+		);
 		if ( el ) {
-			el.textContent = sprintf( __( 'WebLLM worker: %s', DOMAIN ), text );
-		}
-		// eslint-disable-next-line no-console
-		if ( window.console ) {
-			console.log( '[WebLLM worker]', text );
+			el.textContent = sprintf(
+				/* translators: %s: WebLLM worker status. */
+				__( 'WebLLM worker: %s', 'ai-provider-for-webllm' ),
+				text
+			);
 		}
 	}
 } )();

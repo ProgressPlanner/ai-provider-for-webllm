@@ -10,13 +10,26 @@
  * Buildless on purpose: uses the registered `wp-element` / `wp-components` globals
  * (no JSX / webpack). web-llm is pulled with a pinned dynamic import;
  * the same package will power inference, so this also primes its cache.
+ *
+ * @param {Object} wp WordPress browser globals.
  */
 ( function ( wp ) {
-	if ( ! wp || ! wp.element || ! wp.components || ! wp.components.ComboboxControl ) {
+	if (
+		! wp ||
+		! wp.element ||
+		! wp.components ||
+		! wp.components.ComboboxControl
+	) {
 		return;
 	}
 
-	const { createElement: el, useState, useEffect, createRoot, render } = wp.element;
+	const {
+		createElement: el,
+		useState,
+		useEffect,
+		createRoot,
+		render,
+	} = wp.element;
 	const { ComboboxControl } = wp.components;
 	const { __, sprintf } = wp.i18n;
 
@@ -47,7 +60,9 @@
 				);
 		}
 		if ( model.low ) {
-			label += ' · ' + __( 'runs on low-end devices', 'ai-provider-for-webllm' );
+			label +=
+				' · ' +
+				__( 'runs on low-end devices', 'ai-provider-for-webllm' );
 		}
 		return { value: model.id, label };
 	}
@@ -63,15 +78,22 @@
 		useEffect( () => {
 			let active = true;
 
+			// eslint-disable-next-line import/no-unresolved
 			import( 'https://esm.run/@mlc-ai/web-llm@0.2.84' )
 				.then( ( mod ) => {
 					if ( ! active ) {
 						return;
 					}
 
-					const list = ( ( mod.prebuiltAppConfig && mod.prebuiltAppConfig.model_list ) || [] )
+					const list = (
+						( mod.prebuiltAppConfig &&
+							mod.prebuiltAppConfig.model_list ) ||
+						[]
+					)
 						// Drop embedding models — this is a text-generation provider.
-						.filter( ( m ) => m.model_id && ! /embed/i.test( m.model_id ) )
+						.filter(
+							( m ) => m.model_id && ! /embed/i.test( m.model_id )
+						)
 						.map( ( m ) => ( {
 							id: m.model_id,
 							vram: Number( m.vram_required_MB ) || 0,
@@ -81,14 +103,24 @@
 						.map( toOption );
 
 					// Keep the saved model selectable even if it left the catalogue.
-					if ( initial && ! list.some( ( o ) => o.value === initial ) ) {
+					if (
+						initial &&
+						! list.some( ( o ) => o.value === initial )
+					) {
 						list.unshift( {
 							value: initial,
-							label: initial + ' ' + __( '(saved)', 'ai-provider-for-webllm' ),
+							label:
+								initial +
+								' ' +
+								__( '(saved)', 'ai-provider-for-webllm' ),
 						} );
 					}
 
-					setOptions( list.length ? list : ( initial ? [ { value: initial, label: initial } ] : [] ) );
+					let nextOptions = list;
+					if ( ! nextOptions.length && initial ) {
+						nextOptions = [ { value: initial, label: initial } ];
+					}
+					setOptions( nextOptions );
 					setLoading( false );
 				} )
 				.catch( ( error ) => {
@@ -96,7 +128,10 @@
 						return;
 					}
 					// eslint-disable-next-line no-console
-					console.error( 'WebLLM: could not load the model catalogue.', error );
+					console.error(
+						'WebLLM: could not load the model catalogue.',
+						error
+					);
 					setLoading( false );
 				} );
 
