@@ -1,0 +1,35 @@
+name: Plugin asset/readme update
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  asset-deploy:
+    name: Sync readme to WordPress.org
+    # The plugin is not on WordPress.org yet, so the SVN checkout would fail on
+    # every push. Once it is live, set the repository variable
+    # WPORG_PLUGIN_LIVE to "true" to switch this on. Manual runs always go ahead.
+    if: vars.WPORG_PLUGIN_LIVE == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Same environment as deploy.yml, which is where the SVN secrets live.
+    environment: wordpress-org
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: WordPress.org plugin asset/readme update
+        uses: 10up/action-wordpress-plugin-asset-update@2480306f6f693672726d08b5917ea114cb2825f7 # 2.2.0
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: ai-provider-for-webllm
+          # There is no .wordpress-org/ directory (banner, icon, screenshots)
+          # yet, and the action fails when that directory is missing. Remove
+          # this line once .wordpress-org/ exists. Note that /assets holds the
+          # plugin's runtime JS and CSS, not WordPress.org listing assets.
+          SKIP_ASSETS: true
