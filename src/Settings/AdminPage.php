@@ -151,9 +151,7 @@ class AdminPage
         </label>
         <p class="description">
             <?php esc_html_e(
-                'When enabled, an open wp-admin tab downloads the selected model (once, then cached) and '
-                . 'answers server-side generation requests. The model stays loaded as you navigate; closing '
-                . 'all admin tabs pauses it.',
+                'When enabled, an open wp-admin tab downloads the selected model (once, then cached) and answers server-side generation requests. The model stays loaded as you navigate; closing all admin tabs pauses it.',
                 'ai-provider-for-webllm'
             ); ?>
         </p>
@@ -224,9 +222,7 @@ class AdminPage
     public static function renderSectionDescription(): void
     {
         echo '<p>' . esc_html__(
-            'WebLLM runs the selected model entirely in the visitor\'s browser using WebGPU. '
-            . 'The model is downloaded once and cached. Larger models are more capable but take '
-            . 'longer to download and need more memory.',
+            'WebLLM runs the selected model entirely in the visitor\'s browser using WebGPU. The model is downloaded once and cached. Larger models are more capable but take longer to download and need more memory.',
             'ai-provider-for-webllm'
         ) . '</p>';
     }
@@ -260,8 +256,7 @@ class AdminPage
 
         echo '<p class="description">';
         esc_html_e(
-            'Start typing to filter. The list is loaded live from WebLLM and ordered by size. '
-            . 'If it does not load, your browser could not reach the WebLLM catalogue; the saved model still works.',
+            'Start typing to filter. The list is loaded live from WebLLM and ordered by size. If it does not load, your browser could not reach the WebLLM catalogue; the saved model still works.',
             'ai-provider-for-webllm'
         );
         echo '</p>';
