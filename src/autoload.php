@@ -10,6 +10,10 @@
 
 declare(strict_types=1);
 
+if (!defined('ABSPATH')) {
+    return;
+}
+
 spl_autoload_register(static function (string $class): void {
     $prefix = 'WordPress\\WebLlmAiProvider\\';
     $baseDir = __DIR__ . '/';

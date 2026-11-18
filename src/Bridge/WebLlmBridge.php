@@ -185,6 +185,7 @@ class WebLlmBridge
                 sprintf(
                     'No WebLLM worker is connected for model %s. Open the WebLLM worker page in a browser '
                     . 'and wait for that model to finish loading, then retry.',
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not output.
                     $model
                 )
             );
@@ -242,6 +243,7 @@ class WebLlmBridge
                 $error = (string) $row['error'];
                 self::deleteJob($id);
 
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not output.
                 throw new RuntimeException('WebLLM worker error: ' . $error);
             }
 
@@ -252,6 +254,7 @@ class WebLlmBridge
                 self::deleteJob($id);
 
                 throw new RuntimeException(
+                    // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not output.
                     sprintf('The WebLLM worker for model %s disconnected before starting the job.', $model)
                 );
             }
@@ -259,6 +262,7 @@ class WebLlmBridge
 
         self::deleteJob($id);
 
+        // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, not output.
         throw new RuntimeException(sprintf('WebLLM generation timed out after %d seconds.', $timeout));
     }
 
