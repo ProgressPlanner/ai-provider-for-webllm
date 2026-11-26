@@ -36,6 +36,10 @@ jobs:
             wp_version: "latest"
             multisite: false
 
+          - php_version: "8.5"
+            wp_version: "latest"
+            multisite: false
+
     services:
       mysql:
         image: mysql:8.0
