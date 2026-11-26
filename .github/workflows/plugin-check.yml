@@ -36,9 +36,16 @@ jobs:
       #
       # Pinned to v3.1.0 deliberately: newest release accepting wp-cli ^2.
       # v3.2.x requires ^2.13, which has no stable release (latest is 2.12.0).
+      #
+      # Without a token Composer sometimes cannot use the GitHub API (the
+      # anonymous rate limit is shared by every job on the runner's address)
+      # and falls back to cloning over SSH, which fails here with "Permission
+      # denied (publickey)". Rewriting SSH remotes to HTTPS lets that fallback
+      # clone the public repository anonymously.
       - name: Install dist-archive-command
         run: |
           rm -f "$(composer config --global home 2>/dev/null)/auth.json"
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
           wp package install wp-cli/dist-archive-command:v3.1.0
 
       # Build exactly what ships to WordPress.org (honours .distignore).
